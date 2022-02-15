@@ -1267,7 +1267,7 @@ size_t TinyInst::GetBaseAddress(size_t translated_address){
   if (!module->instrumented) return translated_address;
 
   if(full_address_map){
-    return module->address_map[translated_address];
+   return module->address_map[translated_address];
   }
 
   // We compute the offset from the base of the instrumented code to the crashing IP
