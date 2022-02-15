@@ -64,6 +64,12 @@ elseif (APPLE)
   )
 endif()
 
+if (WIN32)
+  project(StackWalker-project)
+  add_subdirectory(stackwalker)
+endif()
+
+
 add_custom_target(
   xed
   DEPENDS ${XED_LIB} ${XED_INTERFACE_H}

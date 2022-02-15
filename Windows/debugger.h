@@ -21,11 +21,11 @@ limitations under the License.
 #include <list>
 #include <unordered_set>
 #include <unordered_map>
+#include <functional>
 
 #include "common.h"
 #include "windows.h"
 #include "arch/x86/reg.h"
-
 
 enum DebuggerStatus {
   DEBUGGER_NONE,
@@ -71,6 +71,7 @@ public:
     bool maybe_write_violation;
     bool maybe_execute_violation;
     void *access_address;
+    DWORD threadId;
   };
 
   Exception GetLastException() {
@@ -144,7 +145,9 @@ protected:
   template<typename T>
   void PatchPointersRemoteT(size_t min_address, size_t max_address, std::unordered_map<size_t, size_t>& search_replace);
 
-private:
+  Exception last_exception;
+  HANDLE child_handle;
+ private:
   struct Breakpoint {
     void *address;
     int type;
@@ -157,7 +160,7 @@ private:
   DebuggerStatus DebugLoop(uint32_t timeout, bool killing=false);
   int HandleDebuggerBreakpoint(void *address);
   void HandleDllLoadInternal(LOAD_DLL_DEBUG_INFO *LoadDll);
-  DebuggerStatus HandleExceptionInternal(EXCEPTION_RECORD *exception_record);
+  DebuggerStatus HandleExceptionInternal(EXCEPTION_RECORD *exception_record, DWORD threadId);
   void HandleTargetReachedInternal();
   void HandleTargetEnded();
   char *GetTargetAddress(HMODULE module);
@@ -183,7 +186,8 @@ protected:
   int32_t child_ptr_size = sizeof(void *);
 
 private:
-  HANDLE child_handle, child_thread_handle;
+  HANDLE child_thread_handle;
+  DWORD child_pid;
 
   HANDLE devnul_handle = INVALID_HANDLE_VALUE;
 
@@ -222,7 +226,6 @@ private:
   void CreateException(EXCEPTION_RECORD *win_exception_record,
                        Exception *exception);
 
-  Exception last_exception;
   // thread id of the last event
   DWORD thread_id;
   CONTEXT lcContext;

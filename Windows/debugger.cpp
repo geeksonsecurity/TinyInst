@@ -26,7 +26,8 @@ limitations under the License.
 
 #include "../common.h"
 #include "debugger.h"
-
+#include "third_party/stackwalker/Main/StackWalker/StackWalker.h"
+#include "ExtendedStackWalker.h"
 
 #define CALLCONV_MICROSOFT_X64 0
 #define CALLCONV_THISCALL 1
@@ -1373,9 +1374,11 @@ void Debugger::OnProcessCreated() {
 }
 
 // called when an exception in the target occurs
-DebuggerStatus Debugger::HandleExceptionInternal(EXCEPTION_RECORD *exception_record)
+DebuggerStatus Debugger::HandleExceptionInternal(EXCEPTION_RECORD *exception_record, DWORD threadId)
 {
   CreateException(exception_record, &last_exception);
+  // we save the thread ID so we can later walk the stack
+  last_exception.threadId = threadId;
 
   // note: instrumentation could have placed breakpoints
   // on the same addresses as debugger
@@ -1497,7 +1500,7 @@ DebuggerStatus Debugger::DebugLoop(uint32_t timeout, bool killing)
     {
     case EXCEPTION_DEBUG_EVENT:
       if (!killing) {
-        ret = HandleExceptionInternal(&DebugEv->u.Exception.ExceptionRecord);
+        ret = HandleExceptionInternal(&DebugEv->u.Exception.ExceptionRecord, DebugEv->dwThreadId);
         if (ret == DEBUGGER_CRASHED) OnCrashed(&last_exception);
         if (ret != DEBUGGER_CONTINUE) return ret;
       } else {

@@ -61,7 +61,7 @@ set (cross_platform_files
      litecov.h
      litecov.cpp
      unwind.h
-)
+        )
 
 if (WIN32)
   set (platform_specific_files
@@ -69,7 +69,7 @@ if (WIN32)
        Windows/debugger.cpp
        Windows/winunwind.cpp
        Windows/winunwind.h
-  )
+          Windows/ExtendedStackWalker.cpp Windows/ExtendedStackWalker.h)
 elseif (APPLE)
   if (${ARCHITECTURE} MATCHES arm64)
     set(CMAKE_REQUIRED_LINK_OPTIONS "-arch;arm64")
@@ -125,6 +125,7 @@ else()
     target_link_libraries(tinyinst
                           ${CMAKE_CURRENT_BINARY_DIR}/third_party/obj/wkit/lib/xed.lib
                           Dbghelp.lib
+                          ${CMAKE_CURRENT_BINARY_DIR}/third_party/stackwalker/StackWalker.lib
     )
   elseif (APPLE)
     target_link_libraries(tinyinst

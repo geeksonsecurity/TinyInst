@@ -1256,3 +1256,59 @@ void TinyInst::Init(int argc, char **argv) {
   }
   unwind_generator->Init(argc, argv);
 }
+
+size_t TinyInst::GetBaseAddress(size_t translated_address){
+  ModuleInfo *module = GetModuleFromInstrumented(translated_address);
+  // if the module is not found or not instrumented its likely that the address is the "original" one
+  if (!module) return translated_address;
+  if (!module->instrumented) return translated_address;
+
+  if(full_address_map){
+    return module->address_map[translated_address];
+  }
+
+  // We compute the offset from the base of the instrumented code to the crashing IP
+  uint32_t translated_offset = (uint32_t)(translated_address - (size_t)module->instrumented_code_remote);
+  // Probably this won't work since the instrumented buffer is likely bigger then the one
+  // since it will include instrumentation code as well as the original code
+  // But at least it gives an idea where we are (the basic block should be correct)
+  int closest_bb_translated = 0;
+  int closest_bb_original = 0;
+  int best_delta = INT_MAX;
+  // We find the closest basic block in the map (first item is the original bb address, second is the translated one)
+  for (std::pair<unsigned int, unsigned int> element : module->basic_blocks)
+  {
+    int delta = translated_offset - element.second;
+    // if we get a closer BB lets overwrite the previous finding
+    if(delta > 0 && delta < best_delta){
+      best_delta = delta;
+      closest_bb_original = element.first;
+      closest_bb_translated = element.second;
+    }
+  }
+  // compute the offset from the beginning of the BB and the crashing location
+  int translated_delta = translated_offset - closest_bb_translated;
+  // transpose this offset to the original BB address
+  // this is likely off depending on how big is the BB and how much instrumentation
+  // has been added upon the original code
+  // int closest_ip = closest_bb_original + translated_delta;
+  // lets return the crashing basic block address instead of the imprecise IP (closest_ip)
+  return (size_t)module->min_address + closest_bb_original;
+}
+
+char* TinyInst::GetLastExceptionCallstack()
+{
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32)
+  if(!last_exception.threadId){
+    WARN("No thread ID available in last exception");
+    return NULL;
+  }
+  DWORD pid = GetProcessId(child_handle);
+  ExtendedStackWalker sw(pid, child_handle);
+  DWORD tid = last_exception.threadId;
+  return sw.GetCallstack(tid);
+#else
+  // TODO: implement for macOS
+  return NULL;
+#endif
+}
