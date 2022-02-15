@@ -4,22 +4,25 @@
 #include <string>
 #include <sstream>
 
-#include "third_party/stackwalker/Main/StackWalker/StackWalker.h"
+#include "tinyinst.h"
 #include "common.h"
+#include "third_party/stackwalker/Main/StackWalker/StackWalker.h"
 
 class ExtendedStackWalker : public StackWalker
 {
  public:
-  ExtendedStackWalker(DWORD dwProcessId, HANDLE hProcess)
-    : StackWalker(StackWalker::StackWalkOptions::OptionsAll, NULL, dwProcessId, hProcess) { }
-
+  ExtendedStackWalker(TinyInst *tinyInst, DWORD dwProcessId, HANDLE hProcess)
+    : StackWalker(StackWalker::StackWalkOptions::OptionsAll, NULL, dwProcessId, hProcess) {
+    _tinyInst = tinyInst;
+  }
   char* GetCallstack(DWORD threadId);
  protected:
   void OnOutput(LPCSTR szText) override;
   void OnCallstackEntry(CallstackEntryType eType, CallstackEntry& entry) override;
   void OnDbgHelpErr(LPCSTR szFuncName, DWORD gle, DWORD64 addr) override;
  private:
-  std::string collected_stack;
+  TinyInst *_tinyInst;
+  std::string _collected_stack;
 };
 
 #endif //WINDOWS_EXTENDEDSTACKWALKER_H_

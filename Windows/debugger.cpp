@@ -26,8 +26,6 @@ limitations under the License.
 
 #include "../common.h"
 #include "debugger.h"
-#include "third_party/stackwalker/Main/StackWalker/StackWalker.h"
-#include "ExtendedStackWalker.h"
 
 #define CALLCONV_MICROSOFT_X64 0
 #define CALLCONV_THISCALL 1

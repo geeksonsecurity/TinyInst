@@ -700,6 +700,9 @@ ModuleInfo *TinyInst::GetModuleFromInstrumented(size_t address) {
 }
 
 void TinyInst::OnCrashed(Exception *exception_record) {
+  // TODO: remove this
+  printf(GetLastExceptionCallstack());
+
   // clear known entries on crash
   for (auto module : instrumented_modules) {
     module->entry_offsets.clear();
@@ -1304,7 +1307,7 @@ char* TinyInst::GetLastExceptionCallstack()
     return NULL;
   }
   DWORD pid = GetProcessId(child_handle);
-  ExtendedStackWalker sw(pid, child_handle);
+  ExtendedStackWalker sw(this, pid, child_handle);
   DWORD tid = last_exception.threadId;
   return sw.GetCallstack(tid);
 #else

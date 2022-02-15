@@ -25,6 +25,8 @@ limitations under the License.
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32)
   #include "Windows/debugger.h"
+  // forward declaration of TinyInst
+  class TinyInst;
   #include "Windows/ExtendedStackWalker.h"
 #elif __APPLE__
   #include "macOS/debugger.h"
@@ -82,7 +84,8 @@ public:
     instrumentation_disabled = true;
   }
 
-protected:
+  size_t GetBaseAddress(size_t translated_address);
+ protected:
 
   enum IndirectInstrumentation {
     II_NONE,
@@ -159,7 +162,6 @@ protected:
   UnwindGenerator* unwind_generator;
   virtual void OnReturnAddress(ModuleInfo *module, size_t original_address, size_t translated_address);
 
-  size_t GetBaseAddress(size_t translated_address);
   virtual char* GetLastExceptionCallstack();
 
 private:
