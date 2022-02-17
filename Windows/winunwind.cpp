@@ -448,12 +448,15 @@ void WinUnwindGenerator::WriteFunctionInfo(ModuleInfo* module, FunctionInfo* inf
   functionTable->num_entries++;
   DWORD start_offset = (DWORD)(info->function_start - (size_t)module->instrumented_code_remote);
   DWORD end_offset = (DWORD)(info->function_end - (size_t)module->instrumented_code_remote);
+
+  printf("0x%llx - 0x%llx 0x%x\n", info->function_start, info->function_end, functionTable->offset);
   tinyinst_.WriteCodeAtOffset(module, functionTable->offset, &start_offset, sizeof(DWORD));
   functionTable->offset += sizeof(DWORD);
   tinyinst_.WriteCodeAtOffset(module, functionTable->offset, &end_offset, sizeof(DWORD));
   functionTable->offset += sizeof(DWORD);
   tinyinst_.WriteCodeAtOffset(module, functionTable->offset, &info->unwind_info->translated_offset, sizeof(DWORD));
   functionTable->offset += sizeof(DWORD);
+
 }
 
 size_t WinUnwindGenerator::WriteFunctionTable(ModuleInfo* module, FunctionTable& functionTable, size_t max_entries) {
@@ -509,6 +512,7 @@ size_t WinUnwindGenerator::MaybeRedirectExecution(ModuleInfo* module, size_t IP)
 
   size_t function_table_old_offset = unwind_data->function_table.offset;
   for (auto iter = unwind_data->translated_infos.begin(); iter != unwind_data->translated_infos.end(); iter++) {
+    unwind_data->translated_function_infos.push_back(FunctionInfoOffset(iter->function_start, iter->function_end, unwind_data->function_table.offset));
     WriteFunctionInfo(module, &(*iter), &unwind_data->function_table);
   }
   size_t function_table_new_offset = unwind_data->function_table.offset;
@@ -664,7 +668,7 @@ void WinUnwindGenerator::OnReturnAddress(ModuleInfo* module,
   ret_info.original_return_address = original_address;
   ret_info.original_function_info = info;
 
-  // printf("Return address %zx %zx\n", translated_address, original_address);
+  printf("Return address %zx %zx\n", translated_address, original_address);
 
   unwind_data->return_addresses[translated_address] = ret_info;
 }
@@ -690,8 +694,23 @@ void WinUnwindGenerator::OnBasicBlockEnd(ModuleInfo* module,
   size_t translated_address)
 {
   WinUnwindData* unwind_data = (WinUnwindData*)module->unwind_data;
-  if (unwind_data->last_translated_entry) 
+  if (unwind_data->last_translated_entry)
     unwind_data->last_translated_entry->function_end = translated_address;
+}
+
+size_t WinUnwindGenerator::LookupUnwindInfoForTranslatedAddress(size_t translated_address){
+  ModuleInfo *module = tinyinst_.GetModuleFromInstrumented(translated_address);
+  if(module != NULL){
+    if(module->unwind_data == NULL) return NULL;
+    WinUnwindData* unwind_data = (WinUnwindData*)module->unwind_data;
+    if(unwind_data->translated_function_infos.size() == 0) return NULL;
+    for (auto iter = unwind_data->translated_function_infos.begin(); iter != unwind_data->translated_function_infos.end(); iter++) {
+      if(translated_address >= iter->function_start && translated_address <= iter->function_end){
+        return reinterpret_cast<size_t>(module->instrumented_code_remote + iter->table_offset);
+      }
+    }
+  }
+  return NULL;
 }
 
 #endif // _WIN64

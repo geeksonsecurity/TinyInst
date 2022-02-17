@@ -6,4 +6,5 @@
 	url = https://github.com/intelxed/mbuild
 [submodule "third_party/stackwalker"]
 	path = third_party/stackwalker
-	url = https://github.com/JochenKalmbach/StackWalker.git
+	url = https://github.com/geeksonsecurity/StackWalker
+    branch = add-custom-function-table-access

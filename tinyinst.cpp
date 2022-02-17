@@ -281,7 +281,7 @@ bool TinyInst::HandleBreakpoint(void *address) {
     auto iter = module->tracepoints.find((size_t)address);
     if (iter != module->tracepoints.end()) {
 
-      printf("TRACE: Executing basic block, original at %p, instrumented at %p\n",
+      printf("0x%p, 0x%p, ",
              (void *)iter->second, (void *)iter->first);
       return true;
     } else {
@@ -702,6 +702,7 @@ ModuleInfo *TinyInst::GetModuleFromInstrumented(size_t address) {
 void TinyInst::OnCrashed(Exception *exception_record) {
   // TODO: remove this
   printf(GetLastExceptionCallstack());
+  fflush(stdout);
 
   // clear known entries on crash
   for (auto module : instrumented_modules) {

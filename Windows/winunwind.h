@@ -49,6 +49,13 @@ struct FunctionInfo {
 	size_t function_info_addr;
 };
 
+struct FunctionInfoOffset {
+  FunctionInfoOffset(size_t function_start, size_t function_end, size_t table_offset) : function_start(function_start), function_end(function_end), table_offset(table_offset){}
+  size_t function_start;
+  size_t function_end;
+  size_t table_offset;
+};
+
 struct FunctionTable {
 	FunctionTable() : max_entries(0), addr(0) {}
 
@@ -111,6 +118,9 @@ public:
 	// (in the remote process)
 	FunctionTable function_table;
 
+    // we keep the offset for fast lookup of function entry for each (translated) function
+    std::vector<FunctionInfoOffset> translated_function_infos;
+
 	void CommitLastTranslated();
 };
 
@@ -144,6 +154,8 @@ public:
 		size_t translated_address) override;
 
 	bool Is64BitOnly() override { return true; }
+
+    size_t LookupUnwindInfoForTranslatedAddress(size_t translated_address) override;
 
 protected:
 	UnwindInfo* ReadUnwindInfo(ModuleInfo* module, unsigned char* modulebuf, size_t image_size, uint32_t unwind_info_offset);

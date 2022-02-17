@@ -10,7 +10,7 @@ char *ExtendedStackWalker::GetCallstack(DWORD threadId) {
   if(!hThread){
     WARN("Unable to open handle to thread id %d in exception\n", threadId);
   } else {
-    ShowCallstack(hThread);
+    ShowCallstack(hThread, NULL, NULL, NULL, MySymFunctionTableAccess64, (LPVOID) tinyInst_);
     CloseHandle(hThread);
   }
   char *new_string = new char[_collected_stack.length() + 1];
@@ -28,7 +28,7 @@ void ExtendedStackWalker::OnCallstackEntry(StackWalker::CallstackEntryType eType
     if (entry.undFullName[0] != 0)
       entryName << entry.undFullName << " ";
 
-    DWORD64 translated = _tinyInst->GetBaseAddress(entry.offset);
+    DWORD64 translated = tinyInst_->GetBaseAddress(entry.offset);
 
     if(translated != entry.offset){
       ss << (LPVOID)translated << " ";
@@ -50,4 +50,16 @@ void ExtendedStackWalker::OnCallstackEntry(StackWalker::CallstackEntryType eType
 }
 void ExtendedStackWalker::OnDbgHelpErr(LPCSTR szFuncName, DWORD gle, DWORD64 addr) {
   // mute all the symbol resolution failures
+}
+
+PVOID ExtendedStackWalker::MySymFunctionTableAccess64(HANDLE hProcess, DWORD64 AddrBase, PVOID data) {
+  if(data == NULL) return NULL;
+  TinyInst* tinyInst = reinterpret_cast<TinyInst*>(data);
+  PVOID addr = SymFunctionTableAccess64(hProcess, AddrBase);
+  if(addr == NULL){
+    size_t found = tinyInst->unwind_generator->LookupUnwindInfoForTranslatedAddress(AddrBase);
+    PVOID target = reinterpret_cast<PVOID>(found);
+    return target;
+  }
+  return addr;
 }

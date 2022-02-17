@@ -85,6 +85,7 @@ public:
   }
 
   size_t GetBaseAddress(size_t translated_address);
+  UnwindGenerator* unwind_generator;
  protected:
 
   enum IndirectInstrumentation {
@@ -159,7 +160,6 @@ public:
   int32_t sp_offset;
   Assembler* assembler_;
 
-  UnwindGenerator* unwind_generator;
   virtual void OnReturnAddress(ModuleInfo *module, size_t original_address, size_t translated_address);
 
   virtual char* GetLastExceptionCallstack();

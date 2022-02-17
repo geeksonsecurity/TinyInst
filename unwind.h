@@ -62,6 +62,8 @@ public:
 
   virtual bool Is64BitOnly() { return false; }
 
+  virtual size_t LookupUnwindInfoForTranslatedAddress(size_t translated_address){ return 0; }
+
 protected:
 	TinyInst& tinyinst_;
 };
